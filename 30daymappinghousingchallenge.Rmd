@@ -1,0 +1,67 @@
+---
+title: "30daymappinghousingchallenge"
+author: "scurry"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: TRUE
+    theme: united
+    number_sections: FALSE
+    toc_float: TRUE
+    toc_depth: 2
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+install.packages("devtools")
+devtools::install_github("CityOfPhiladelphia/rphl")
+
+library(dplyr)
+library(sf)
+library(ggplot2)
+library(lubridate)
+library(tidycensus)
+library(tidygeocoder)
+library(tidyr)
+
+```
+
+```{r data, include=FALSE, message=FALSE, warning=FALSE}
+
+query <- paste("SELECT *", "FROM permits")
+d01_data <- get_carto(query = query, format = "csv", base_url = "https://phl.carto.com/api/v2/sql", stringsAsFactors = FALSE)
+
+
+```
+
+# 30 Day Map(ping Housing) Challenge
+
+Wow, let's give it a go. 
+
+## Day 01 - Points
+
+```{r day01_data, message=FALSE, warning=FALSE}
+
+d01_work <- d01_data %>%
+  filter(commercialorresidential == "RESIDENTIAL" & permittype == "RESIDENTIAL BUILDING")
+
+d01_work$mostrecentinsp <- ymd_hms(d01_work$mostrecentinsp)
+
+d01_work <- d01_work %>%
+  filter(mostrecentinsp >= "2024-01-01")
+
+d01_work <- d01_work %>%
+  distinct(address, .keep_all = TRUE) %>%
+  geocode(address = address, postalcode = zip, method = "census", verbose = TRUE)
+
+Md01_work <- st_as_sf(d01_work, coords = c("geocode_x", "geocode_y"), crs = )
+
+```
+
+```{r day01_map, message=FALSE, warning=FALSE}
+
+ggplot()
+
+```
