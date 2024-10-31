@@ -106,3 +106,63 @@ ggplot() +
 
 
 ```
+
+## Day 02 - Lines
+
+```{r day02_data, include=FALSE, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r day02_work, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r day02_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
+
+
+
+```
+
+## Day 03 - Polygons
+
+```{r day03_data, include=FALSE, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r day03_work, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r day03_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
+
+
+
+```
+
+## Day 04 - Hexagons
+
+```{r day04_data, include=FALSE, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r day04_work, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r day04_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
+
+
+
+```
