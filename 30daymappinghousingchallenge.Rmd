@@ -15,26 +15,34 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-install.packages("devtools")
+#install.packages("devtools")
 devtools::install_github("CityOfPhiladelphia/rphl")
 
 library(dplyr)
 library(sf)
 library(ggplot2)
+library(ggtext)
+library(glue)
 library(lubridate)
+library(rphl)
 library(tidycensus)
 library(tidygeocoder)
 library(tidyr)
+library(tigris)
 
 ```
 
-```{r data, include=FALSE, message=FALSE, warning=FALSE}
+```{r basemaps, include=FALSE, message=FALSE, warning=FALSE}
 
-query <- paste("SELECT *", "FROM permits")
-d01_data <- get_carto(query = query, format = "csv", base_url = "https://phl.carto.com/api/v2/sql", stringsAsFactors = FALSE)
+options(tigris_use_cache = TRUE)
 
+map_phl_bound <- places(state = "PA", class = "city") %>% 
+  filter(NAME == "Philadelphia") %>%
+  st_transform("EPSG:2272") %>%
+  erase_water()
 
 ```
+
 
 # 30 Day Map(ping Housing) Challenge
 
@@ -42,10 +50,20 @@ Wow, let's give it a go.
 
 ## Day 01 - Points
 
-```{r day01_data, message=FALSE, warning=FALSE}
+```{r day01_data, include=FALSE, message=FALSE, warning=FALSE}
+
+query <- paste("SELECT *", "FROM permits")
+d01_data <- get_carto(query = query, format = "csv", base_url = "https://phl.carto.com/api/v2/sql", stringsAsFactors = FALSE)
+
+```
+
+```{r day01_work, message=FALSE, warning=FALSE}
 
 d01_work <- d01_data %>%
-  filter(commercialorresidential == "RESIDENTIAL" & permittype == "RESIDENTIAL BUILDING")
+  filter(commercialorresidential == "RESIDENTIAL") %>%
+  filter(permittype == "DEMOLITION" | permittype == "RESIDENTIAL BUILDING") 
+
+d01_work <- filter(d01_work, grepl("DEMOLITION|NEW CONSTRUCTION", typeofwork)) 
 
 d01_work$mostrecentinsp <- ymd_hms(d01_work$mostrecentinsp)
 
@@ -53,15 +71,38 @@ d01_work <- d01_work %>%
   filter(mostrecentinsp >= "2024-01-01")
 
 d01_work <- d01_work %>%
-  distinct(address, .keep_all = TRUE) %>%
-  geocode(address = address, postalcode = zip, method = "census", verbose = TRUE)
+  distinct(address, .keep_all = TRUE) 
 
-Md01_work <- st_as_sf(d01_work, coords = c("geocode_x", "geocode_y"), crs = )
+d01_work <- d01_work %>%
+  drop_na(geocode_x, geocode_y)
+
+d01_work <- st_as_sf(d01_work, coords = c("geocode_x", "geocode_y"), crs = 2272)
+
+d01_work$type <- if_else(grepl("DEMOLITION", d01_work$typeofwork), "DEMOLITION", "NEW CONSTRUCTION")
+
+table(d01_work$type)
 
 ```
 
-```{r day01_map, message=FALSE, warning=FALSE}
+```{r day01_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
 
-ggplot()
+demo_color <- "#913047"
+newcon_color <- "#516954"
+day01_title <- "There have been <span style='color: #913047;'>**296 Demolition**</span> and <span style='color: #516954;'>**1,136 New Construction**</span> \n Residential Permits Issued in Philadlephia in 2024"
+
+ggplot() +
+  geom_sf(data = map_phl_bound, color = "white", fill = "gray80") +
+  geom_sf(data = d01_work, aes(color = type), size = 0.75) +
+  scale_color_manual(values = c(demo_color, newcon_color)) +
+  labs(subtitle = day01_title,
+       caption = "Data Source: OpenDataPhilly, Licenses & Inspections") +
+  theme(plot.subtitle = element_textbox_simple(size = 14, lineheight = 1, halign = 0.5, padding = margin(10, 30, 20, 30)),
+        legend.position = "none",
+        panel.background = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank())
+
 
 ```
