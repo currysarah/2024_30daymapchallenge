@@ -18,12 +18,14 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("devtools")
 devtools::install_github("CityOfPhiladelphia/rphl")
 
+library(censusapi)
 library(dplyr)
 library(sf)
 library(ggplot2)
 library(ggtext)
 library(glue)
 library(lubridate)
+library(mapdeck)
 library(rphl)
 library(tidycensus)
 library(tidygeocoder)
@@ -53,7 +55,7 @@ Wow, let's give it a go.
 ```{r day01_data, include=FALSE, message=FALSE, warning=FALSE}
 
 query <- paste("SELECT *", "FROM permits")
-d01_data <- get_carto(query = query, format = "csv", base_url = "https://phl.carto.com/api/v2/sql", stringsAsFactors = FALSE)
+d01_data <- rphl::get_carto(query = query, format = "csv", base_url = "https://phl.carto.com/api/v2/sql", stringsAsFactors = FALSE)
 
 ```
 
@@ -111,13 +113,50 @@ ggplot() +
 
 ```{r day02_data, include=FALSE, message=FALSE, warning=FALSE}
 
+# acs_variable_list.2022 <- load_variables(2022, #year
+#                                          "acs5", #five year ACS estimates
+#                                          cache = TRUE)
+
+#data <- url("api.census.gov/data/2023/acs/flows?")
+#fromotherstate = "B07204_011"
+
+map_states <- states()
+
+#download and clean the headers from this website:
+#https://www.census.gov/data/tables/time-series/demo/geographic-mobility/state-to-state-migration.html
+
+# d02_data <- read.csv(file = "C:/LocalDocuments/GitHub/2024_30daymapchallenge/data/State_to_State_Migration_Table_2023_T13.csv", header = TRUE)
+
+d02_data <- get_flows(geography = "county",
+                       state = c("PA", "DE", "NJ"),
+                       year = 2022,
+                       output = "long",
+                       geometry = TRUE)
 
 
 ```
 
 ```{r day02_work, message=FALSE, warning=FALSE}
 
+d02_work <- d02_data %>%
+  group_by(FULL2_NAME) %>%
+  summarise(totin = sum(MOVEDIN)) %>%
+  rename("MOVEDFROM" = "FULL2_NAME") %>%
+  mutate(MOVEDTO = "District") %>%
+  filter(MOVEDFROM != "Pennsylvania" & MOVEDFROM != "Delaware" & MOVEDFROM != "New Jersey") %>%
+  st_drop_geometry()
 
+map_padenj <- map_states %>%
+  filter(STUSPS == "PA" | STUSPS == "DE" | STUSPS == "NJ") %>%
+  group_by() %>%
+  summarise()
+
+map_padenj_ctr <- map_padenj %>%
+  st_centroid()
+
+map_states_ctr <- map_states %>% 
+  st_centroid() %>%
+  select(NAME)
 
 ```
 
