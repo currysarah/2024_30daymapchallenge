@@ -32,6 +32,8 @@ library(tidygeocoder)
 library(tidyr)
 library(tigris)
 
+options(tigris_use_cache = TRUE)
+
 ```
 
 ```{r basemaps, include=FALSE, message=FALSE, warning=FALSE}
@@ -120,7 +122,7 @@ ggplot() +
 #data <- url("api.census.gov/data/2023/acs/flows?")
 #fromotherstate = "B07204_011"
 
-map_states <- states()
+map_states <- states() 
 
 #download and clean the headers from this website:
 #https://www.census.gov/data/tables/time-series/demo/geographic-mobility/state-to-state-migration.html
@@ -146,6 +148,9 @@ d02_work <- d02_data %>%
   filter(MOVEDFROM != "Pennsylvania" & MOVEDFROM != "Delaware" & MOVEDFROM != "New Jersey") %>%
   st_drop_geometry()
 
+map_states <- map_states %>%
+  st_transform(crs = 5070)
+
 map_padenj <- map_states %>%
   filter(STUSPS == "PA" | STUSPS == "DE" | STUSPS == "NJ") %>%
   group_by() %>%
@@ -154,16 +159,59 @@ map_padenj <- map_states %>%
 map_padenj_ctr <- map_padenj %>%
   st_centroid()
 
+map_padenj_ctr <- extract(map_padenj_ctr, geometry, into = c('Lat', 'Lon'), '\\((.*),(.*)\\)', conv = T)
+
+map_padenj_ctr <- map_padenj_ctr %>%
+  mutate(MOVEDTO = "District") %>%
+  rename(tolat = "Lat", tolon = "Lon")
+
 map_states_ctr <- map_states %>% 
   st_centroid() %>%
-  select(NAME)
+  select(NAME) %>%
+  rename("MOVEDFROM" = "NAME")
+
+map_states_ctr <- extract(map_states_ctr, geometry, into = c('Lat', 'Lon'), '\\((.*),(.*)\\)', conv = T)
+
+map_states_ctr <- map_states_ctr %>%
+  rename(frlat = "Lat", frlon = "Lon")
+
+d02_work_ <- inner_join(d02_work, map_padenj_ctr, by = "MOVEDTO")
+
+d02_work_ <- inner_join(d02_work_, map_states_ctr, by = "MOVEDFROM")
 
 ```
 
 ```{r day02_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
 
+day02_title <- "New York, Maryland, Florida, and California were the prior homes of over 200,000 new residents who moved to the Third District in 2022"
 
-
+ggplot() + 
+  geom_sf(data = map_states, fill = if_else(map_states$STUSPS == "NY" | map_states$STUSPS == "MD" | map_states$STUSPS == "FL" | map_states$STUSPS == "CA", "lightblue", "gray90"), color = "transparent") +
+  geom_sf(data = map_states, fill = "transparent", color = "white", size = 4) +
+  geom_sf(data = map_padenj, fill = "darkolivegreen", color = "transparent") +
+  geom_curve(data = d02_work_, aes(x = frlat, y = frlon, xend = tolat, yend = tolon), col = "darkslategray4", size = (d02_work_$totin/20000), alpha = 0.5, curvature = 0.2) +
+  geom_point(data = d02_work_,
+             aes(x = frlat, y = frlon), 
+             colour = "darkslategray",
+             size = (d02_work_$totin/20000)) +
+  geom_point(data = map_padenj_ctr,
+             aes(x = tolat, y = tolon), 
+             colour = "darkslategray") +
+  labs(subtitle = day02_title,
+       caption = "Data Source: US Census Bureau, ACS 1-year") +
+  theme(plot.subtitle = element_textbox_simple(size = 14, lineheight = 1, halign = 0.5, padding = margin(10, 30, 20, 30)),
+        legend.position = "none",
+        panel.background = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.ticks = element_blank(),) +
+  xlim(-2150000, 2074000) +
+  ylim(400000.00, 3500000) 
 ```
 
 ## Day 03 - Polygons
