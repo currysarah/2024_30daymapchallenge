@@ -209,7 +209,7 @@ ggplot() +
         axis.line = element_blank(),
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
-        axis.ticks = element_blank(),) +
+        axis.ticks = element_blank()) +
   xlim(-2150000, 2074000) +
   ylim(400000.00, 3500000) 
 ```
@@ -249,6 +249,46 @@ ggplot() +
 ```
 
 ```{r day04_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
+
+
+
+```
+
+## Day 05 - Journey
+
+```{r day05_data, include=FALSE, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r day05_work, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r day05_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
+
+
+
+```
+
+## Day 06 - Raster
+
+```{r day06_data, include=FALSE, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r day06_work, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r day06_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
 
 
 
