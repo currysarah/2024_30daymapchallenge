@@ -246,7 +246,7 @@ d03_work <- d03_data %>%
 
 d03_map <- cartogram_cont(d03_work, weight = "lw_ratio")
 
-day03_title <- "<span style='color: #3288BD;'>McKean County's</span> <span style='color: #FFFFFF;'>Median Household Income is **1.4 times** more than the Cost of Living</span> \n <span style='color: #D53E4F;'>Essex County's</span> <span style='color: #FFFFFF;'>Cost of Living is **.58 times** less than the Cost of Living</span>"
+day03_title <- "<span style='color: #3288BD;'>McKean County's</span> <span style='color: #FFFFFF;'>Median Household Income is **1.4 times** more than its Cost of Living</span> \n <span style='color: #D53E4F;'>Essex County's</span> <span style='color: #FFFFFF;'>Median Household Income is **.58 times** less than its Cost of Living</span>"
 
 day03_subtitle <- "<span style='color: #FFFFFF;'>Cost of Living is calculated as a living wage where 2022 Median Selected Monthly Ownership Costs of homeowners with a mortgage make up 30% of an annual salary</span>"
 
@@ -282,8 +282,11 @@ ggplot() +
 
 ```{r day04_data, include=FALSE, message=FALSE, warning=FALSE}
 
-d04_data <- get_acs(geography = "county",
-                    variables = c(avghhsizeoo = "B25010_002", avghhsizero = "B25010_003"), #median household size owners renters
+d04_data <- get_acs(geography = "block group",
+                    state = "PA",
+                    county = "Philadelphia",
+                    variables = c(medyrbuilt = "B25035_001", totpop = "B02001_001", 
+                                  totwhitepop = "B02001_002", totblackpop = "B02001_003"), #correlate age to race
                     year = 2022,
                     geometry = TRUE,
                     output = "wide"
@@ -294,6 +297,10 @@ d04_data <- get_acs(geography = "county",
 ```{r day04_work, message=FALSE, warning=FALSE}
 
 d04_work <- d04_data %>%
+  mutate(pcentwhite = totwhitepopE/totpopE,
+         pcentnonwhite = 1-(totwhitepopE/totpopE),
+         pcentblack = totblackpopE/totpopE) %>%
+  mutate(coloroldbg = if_else(pcentnonwhite >= 0.50 & medyrbuiltE <= 1970, TRUE, FALSE)) %>%
   st_centroid()
 
 d04_work <- extract(d04_work, geometry, into = c('Lat', 'Lon'), '\\((.*),(.*)\\)', conv = T)
@@ -302,10 +309,17 @@ d04_work <- extract(d04_work, geometry, into = c('Lat', 'Lon'), '\\((.*),(.*)\\)
 
 ```{r day04_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
 
-ggplot(data = d04_work, aes(x = Lat, y = Lon)) + 
-  geom_point(aes(color = avghhsizeooE)) +
-  xlim(-130, -60) +
-  ylim(20, 60)
+ggplot(data = d04_work %>%
+         filter(coloroldbg == TRUE), aes(x = Lat, y = Lon)) + 
+  geom_point() 
+
+#Where are there a high concentration of block groups with predominantly nonwhite hh and median home built before 1970
+ggplot(data = d04_work %>%
+         filter(coloroldbg == TRUE), aes(x = Lat, y = Lon)) + 
+  geom_hex() 
+
+ggplot(data = d04_work, aes(x = medyrbuiltE, y = pcentnonwhite)) + 
+  geom_hex() 
 
 ```
 
@@ -348,3 +362,49 @@ ggplot(data = d04_work, aes(x = Lat, y = Lon)) +
 
 
 ```
+
+# Appendix
+
+## Code That Did Not Work Out
+```{r}
+
+d04_data <- get_acs(geography = "county",
+                    variables = c(avghhsizeoo = "B25010_002", avghhsizero = "B25010_003", 
+                                  numbr = "B25041_001"), #median household size owners renters
+                    year = 2022,
+                    geometry = TRUE,
+                    output = "wide"
+)
+
+d04_work <- d04_data %>%
+  st_centroid()
+
+d04_work <- extract(d04_work, geometry, into = c('Lat', 'Lon'), '\\((.*),(.*)\\)', conv = T)
+
+ggplot(data = d04_work, aes(x = Lat, y = Lon)) + 
+  geom_point(aes(color = avghhsizeooE)) +
+  xlim(-130, -60) +
+  ylim(20, 60)
+
+```
+
+```{r}
+
+d04_data <- get_acs(geography = "county",
+                    variables = c(medyrbuilt = "B25035_001", totpop = "B02001_001", 
+                                  totwhitepop = "B02001_002", totblackpop = "B02001_003"), #correlate age to race
+                    year = 2022,
+                    geometry = TRUE,
+                    output = "wide"
+)
+
+d04_work <- d04_data %>%
+  mutate(pcentwhite = totwhitepopE/totpopE,
+         pcentnonwhite = 1-(totwhitepopE/totpopE),
+         pcentblack = totblackpopE/totpopE)
+
+ggplot(data = d04_work, aes(x = medyrbuiltE, y = pcentnonwhite)) + 
+  geom_hex() 
+
+```
+
