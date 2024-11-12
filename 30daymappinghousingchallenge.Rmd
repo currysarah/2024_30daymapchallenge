@@ -13,6 +13,9 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+
+setwd("C:/LocalDocuments/GitHub/2024_30daymapchallenge")
+
 knitr::opts_chunk$set(echo = TRUE)
 
 #install.packages("devtools")
@@ -26,6 +29,7 @@ library(ggtext)
 library(glue)
 library(lubridate)
 library(mapdeck)
+library(cartogram)
 library(rphl)
 library(tidycensus)
 library(tidygeocoder)
@@ -115,10 +119,6 @@ ggplot() +
 
 ```{r day02_data, include=FALSE, message=FALSE, warning=FALSE}
 
-# acs_variable_list.2022 <- load_variables(2022, #year
-#                                          "acs5", #five year ACS estimates
-#                                          cache = TRUE)
-
 #data <- url("api.census.gov/data/2023/acs/flows?")
 #fromotherstate = "B07204_011"
 
@@ -197,9 +197,9 @@ ggplot() +
   geom_point(data = map_padenj_ctr,
              aes(x = tolat, y = tolon), 
              colour = "darkslategray") +
-  labs(subtitle = day02_title,
+  labs(title = day02_title,
        caption = "Data Source: US Census Bureau, ACS 1-year") +
-  theme(plot.subtitle = element_textbox_simple(size = 14, lineheight = 1, halign = 0.5, padding = margin(10, 30, 20, 30)),
+  theme(plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.5, padding = margin(10, 30, 10, 30)),
         legend.position = "none",
         panel.background = element_blank(),
         axis.text.x = element_blank(),
@@ -218,19 +218,63 @@ ggplot() +
 
 ```{r day03_data, include=FALSE, message=FALSE, warning=FALSE}
 
+acs_variable_list.2022 <- load_variables(2022, #year
+                                         "acs5", #five year ACS estimates
+                                         cache = TRUE)
 
+d03_data <- get_acs(geography = "county",
+                    state = c("PA", "DE", "NJ"),
+                    variables = c(medsmoc = "B25088_002", medhhinc = "B19019_001"), #median smoc w a mortgage
+                    year = 2022,
+                    geometry = TRUE,
+                    output = "wide"
+)
 
 ```
 
 ```{r day03_work, message=FALSE, warning=FALSE}
 
-
+d03_work <- d03_data %>%
+  mutate(monthly_lw = (medsmocE/0.3)) %>%
+  mutate(annual_lw = ((monthly_lw*12))) %>%
+  mutate(lw_ratio = (medhhincE/annual_lw)) %>%
+  st_transform(crs = 2272)
 
 ```
 
 ```{r day03_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
 
+d03_map <- cartogram_cont(d03_work, weight = "lw_ratio")
 
+day03_title <- "<span style='color: #3288BD;'>McKean County's</span> <span style='color: #FFFFFF;'>Median Household Income is **1.4 times** more than the Cost of Living</span> \n <span style='color: #D53E4F;'>Essex County's</span> <span style='color: #FFFFFF;'>Cost of Living is **.58 times** less than the Cost of Living</span>"
+
+day03_subtitle <- "<span style='color: #FFFFFF;'>Cost of Living is calculated as a living wage where 2022 Median Selected Monthly Ownership Costs of homeowners with a mortgage make up 30% of an annual salary</span>"
+
+day03_caption <- "<span style='color: #FFFFFF;'>Data Source: US Census Bureau, ACS 1-year</span>"
+
+ggplot() +
+  geom_sf(data = d03_map, aes(fill = lw_ratio), color = "transparent") +
+  geom_sf(data = d03_map, fill = "transparent", color = if_else((d03_map$GEOID == "34013" | d03_map$GEOID == "42083"), "black", "transparent")) +
+  scale_fill_distiller(palette = "Spectral", direction = 1) +
+  labs(title = day03_title,
+       subtitle = day03_subtitle,
+       caption = day03_caption) +
+  theme(plot.background = element_rect(fill = "black"),
+        plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.5, padding = margin(10, 50, 10, 50)),
+        plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.5, padding = margin (5, 15, 20, 15)),
+        plot.caption = element_textbox_simple(size = 6, lineheight = 1, halign = 1, padding = margin (10, 30, 20, 30)),
+        legend.position = "none",
+        panel.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank())
 
 ```
 
@@ -238,19 +282,30 @@ ggplot() +
 
 ```{r day04_data, include=FALSE, message=FALSE, warning=FALSE}
 
-
+d04_data <- get_acs(geography = "county",
+                    variables = c(avghhsizeoo = "B25010_002", avghhsizero = "B25010_003"), #median household size owners renters
+                    year = 2022,
+                    geometry = TRUE,
+                    output = "wide"
+)
 
 ```
 
 ```{r day04_work, message=FALSE, warning=FALSE}
 
+d04_work <- d04_data %>%
+  st_centroid()
 
+d04_work <- extract(d04_work, geometry, into = c('Lat', 'Lon'), '\\((.*),(.*)\\)', conv = T)
 
 ```
 
 ```{r day04_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
 
-
+ggplot(data = d04_work, aes(x = Lat, y = Lon)) + 
+  geom_point(aes(color = avghhsizeooE)) +
+  xlim(-130, -60) +
+  ylim(20, 60)
 
 ```
 
