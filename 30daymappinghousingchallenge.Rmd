@@ -30,6 +30,7 @@ library(glue)
 library(lubridate)
 library(mapdeck)
 library(cartogram)
+library(raster)
 library(rphl)
 library(tidycensus)
 library(tidygeocoder)
@@ -248,7 +249,7 @@ d03_work <- d03_data %>%
 
 d03_map <- cartogram_cont(d03_work, weight = "lw_ratio")
 
-day03_title <- "<span style='color: #3288BD;'>McKean County's</span> <span style='color: #FFFFFF;'>Median Household Income is **1.4 times** more than its Cost of Living</span> \n <span style='color: #D53E4F;'>Essex County's</span> <span style='color: #FFFFFF;'>Median Household Income is **.58 times** less than its Cost of Living</span>"
+day03_title <- "<span style='color: #3288BD;'>McKean County's</span> <span style='color: #FFFFFF;'>Median Household Income is **1.4 times** more than its Cost of Living & </span> <span style='color: #D53E4F;'>Essex County's</span> <span style='color: #FFFFFF;'>Median Household Income is **.58 times** less than its Cost of Living</span>"
 
 day03_subtitle <- "<span style='color: #FFFFFF;'>Cost of Living is calculated as a living wage where 2022 Median Selected Monthly Ownership Costs of homeowners with a mortgage make up 30% of an annual salary</span>"
 
@@ -262,7 +263,7 @@ ggplot() +
        subtitle = day03_subtitle,
        caption = day03_caption) +
   theme(plot.background = element_rect(fill = "black"),
-        plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.5, padding = margin(10, 50, 10, 50)),
+        plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.5, padding = margin(10, 60, 10, 60)),
         plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.5, padding = margin (5, 15, 20, 15)),
         plot.caption = element_textbox_simple(size = 6),
         legend.position = "none",
@@ -314,9 +315,9 @@ map_phl_bound_4269 <- map_phl_bound %>%
 
 ```{r day04_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
 
-ggplot(data = d04_work %>%
-         filter(coloroldbg == TRUE), aes(x = Lat, y = Lon)) + 
-  geom_point() 
+# ggplot(data = d04_work %>%
+#          filter(coloroldbg == TRUE), aes(x = Lat, y = Lon)) + 
+#   geom_point() 
 
 #Where are there a high concentration of block groups with predominantly nonwhite hh and median home built before 1970
 ggplot() + 
@@ -348,8 +349,8 @@ ggplot() +
         axis.title.x = element_blank(),
         axis.title.y = element_blank())
 
-ggplot(data = d04_work, aes(x = medyrbuiltE, y = pcentnonwhite)) + 
-  geom_hex() 
+# ggplot(data = d04_work, aes(x = medyrbuiltE, y = pcentnonwhite)) + 
+#   geom_hex() 
 
 ```
 
@@ -357,19 +358,59 @@ ggplot(data = d04_work, aes(x = medyrbuiltE, y = pcentnonwhite)) +
 
 ```{r day05_data, include=FALSE, message=FALSE, warning=FALSE}
 
+#https://www.census.gov/data/tables/2020/demo/metro-micro/commuting-flows-2020.html
+#remove headers, footers, and convert Workers in Commuting Flow to Numeric column
 
+d05_data <- read.csv(file = "data/d05_source.csv")
+
+map_states <- states()
+
+map_counties <- counties() 
 
 ```
 
 ```{r day05_work, message=FALSE, warning=FALSE}
 
+d05_work <- d05_data %>%
+  filter(Workers.in.Commuting.Flow > MOE) %>%
+  drop_na(W.County.FIPS.Code) %>%
+  mutate(R.GEOID = (1000 * R.State.FIPS.Code) + R.County.FIPS.Code,
+         W.GEOID = (1000 * W.State.FIPS.Code) + W.County.FIPS.Code) 
 
+map_counties_ctr <- map_counties %>%
+  mutate(R.GEOID = as.numeric(GEOID)) %>%
+  st_transform(crs = 5070) %>% 
+  st_centroid() %>%
+  dplyr::select(R.GEOID) 
+
+map_counties_ctr <- tidyr::extract(map_counties_ctr, geometry, into = c('Lat', 'Lon'), '\\((.*),(.*)\\)', conv = T)
+
+map_counties_ctr <- map_counties_ctr %>%
+  rename(rlat = "Lat", rlon = "Lon")
+
+d05_work <- inner_join(d05_work, map_counties_ctr, by = "R.GEOID", keep = TRUE)
+
+map_counties_ctr <- map_counties_ctr %>%
+  rename(wlat = "rlat", wlon = "rlon", W.GEOID = "R.GEOID")
+
+d05_work <- inner_join(d05_work, map_counties_ctr, by = "W.GEOID", keep = FALSE)
+
+d05_work <- d05_work %>%
+  mutate(distmeter = pointDistance(d05_work[,c("rlat", "rlon")], d05_work[,c("wlat", "wlon")], lonlat = FALSE)) %>%
+  mutate(distmile = distmeter/1609.34)
+
+d05_work <- d05_work %>%
+  mutate(linecolor = case_when())
 
 ```
 
 ```{r day05_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
 
-
+ggplot() + 
+  geom_sf(data = map_states, fill = "gray", color = "white", size = 4) +
+  geom_segment(data = d05_work, aes(x = rlat, y = rlon, xend = wlat, yend = wlon), col = "darkslategray4", size = 0.25, alpha = 0.5, curvature = 0.0) +
+  xlim(-2150000, 2074000) +
+  ylim(400000.00, 3500000) 
 
 ```
 
@@ -396,7 +437,7 @@ ggplot(data = d04_work, aes(x = medyrbuiltE, y = pcentnonwhite)) +
 # Appendix
 
 ## Code That Did Not Work Out
-```{r}
+```{r eval=FALSE, include=FALSE}
 
 d04_data <- get_acs(geography = "county",
                     variables = c(avghhsizeoo = "B25010_002", avghhsizero = "B25010_003", 
@@ -418,7 +459,7 @@ ggplot(data = d04_work, aes(x = Lat, y = Lon)) +
 
 ```
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 
 d04_data <- get_acs(geography = "county",
                     variables = c(medyrbuilt = "B25035_001", totpop = "B02001_001", 
