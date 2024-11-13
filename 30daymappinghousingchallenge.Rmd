@@ -105,6 +105,7 @@ ggplot() +
   labs(subtitle = day01_title,
        caption = "Data Source: OpenDataPhilly, Licenses & Inspections") +
   theme(plot.subtitle = element_textbox_simple(size = 14, lineheight = 1, halign = 0.5, padding = margin(10, 30, 20, 30)),
+        plot.caption = element_textbox_simple(size = 6),
         legend.position = "none",
         panel.background = element_blank(),
         axis.text.x = element_blank(),
@@ -200,6 +201,7 @@ ggplot() +
   labs(title = day02_title,
        caption = "Data Source: US Census Bureau, ACS 1-year") +
   theme(plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.5, padding = margin(10, 30, 10, 30)),
+        plot.caption = element_textbox_simple(size = 6),
         legend.position = "none",
         panel.background = element_blank(),
         axis.text.x = element_blank(),
@@ -262,7 +264,7 @@ ggplot() +
   theme(plot.background = element_rect(fill = "black"),
         plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.5, padding = margin(10, 50, 10, 50)),
         plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.5, padding = margin (5, 15, 20, 15)),
-        plot.caption = element_textbox_simple(size = 6, lineheight = 1, halign = 1, padding = margin (10, 30, 20, 30)),
+        plot.caption = element_textbox_simple(size = 6),
         legend.position = "none",
         panel.background = element_blank(),
         panel.grid.major = element_blank(),
@@ -305,6 +307,9 @@ d04_work <- d04_data %>%
 
 d04_work <- extract(d04_work, geometry, into = c('Lat', 'Lon'), '\\((.*),(.*)\\)', conv = T)
 
+map_phl_bound_4269 <- map_phl_bound %>%
+  st_transform(crs = 4269)
+
 ```
 
 ```{r day04_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
@@ -314,9 +319,34 @@ ggplot(data = d04_work %>%
   geom_point() 
 
 #Where are there a high concentration of block groups with predominantly nonwhite hh and median home built before 1970
-ggplot(data = d04_work %>%
-         filter(coloroldbg == TRUE), aes(x = Lat, y = Lon)) + 
-  geom_hex() 
+ggplot() + 
+  geom_sf(data = map_phl_bound_4269, color = "white", fill = "gray") +
+  geom_hex(data = d04_work %>%
+         filter(coloroldbg == TRUE), aes(x = Lat, y = Lon), bins = 40, alpha = 0.85) +
+  # ylim(39.9, 40.1) +
+  # xlim(-75.3, -75) +
+  scale_fill_distiller(palette = "Oranges", direction = 1) +
+  annotate("text", x = -75.259, y = 40.01, label = "Haddington", color = "#7B452C", size = 3, fontface = "bold") +
+  geom_curve(aes(x = -75.259, xend = -75.247, y = 40.005, yend = 39.973), color = "steelblue", size = 0.8, curvature = 0.25) +
+#  annotate("text", x = -75.15, y = 39.9, label = "Cobbs Creek", color = "#7B452C", size = 3, fontface = "bold") +
+  annotate("text", x = -75.1, y = 39.95, label = "Point Breeze", color = "#E36D26", size = 3, fontface = "bold") +
+  geom_curve(aes(x = -75.1, xend = -75.165, y = 39.943, yend = 39.935), color = "steelblue", size = 0.8, curvature = -0.25) +
+  labs(title = "High Risks of Lead",
+       subtitle = "Where are the highest concentrations of block groups with predominantly non-White residents and homes built before 1970?",
+       caption = "Data Source: US Census Bureau, ACS 1-year") +
+  theme(plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.5, padding = margin(10, 30, 10, 30)),
+        plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.5, padding = margin(10, 20, 20, 20)),
+        plot.caption = element_textbox_simple(size = 6, lineheight = 1, halign = 1),
+        legend.position = "none",
+        panel.background = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank())
 
 ggplot(data = d04_work, aes(x = medyrbuiltE, y = pcentnonwhite)) + 
   geom_hex() 
