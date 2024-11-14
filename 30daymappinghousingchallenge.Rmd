@@ -400,17 +400,44 @@ d05_work <- d05_work %>%
   mutate(distmile = distmeter/1609.34)
 
 d05_work <- d05_work %>%
-  mutate(linecolor = case_when())
+  mutate(linecolor = case_when(distmile <= 60 ~ "Less than 1 Hour",
+                               distmile > 60 ~ "Over 1 Hour"))
+
+d05_map <- d05_work %>%
+  filter(distmile <= 100 & distmile > 0)
+
+ggplot() + 
+  geom_histogram(data = d05_map, aes(x = Workers.in.Commuting.Flow), fill = "darkolivegreen4", color = "darkolivegreen")
+  
 
 ```
 
 ```{r day05_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
 
+#low = "lemonchiffon", mid = "darkolivegreen", high = "royalblue4"
+
 ggplot() + 
-  geom_sf(data = map_states, fill = "gray", color = "white", size = 4) +
-  geom_segment(data = d05_work, aes(x = rlat, y = rlon, xend = wlat, yend = wlon), col = "darkslategray4", size = 0.25, alpha = 0.5, curvature = 0.0) +
-  xlim(-2150000, 2074000) +
-  ylim(400000.00, 3500000) 
+#  geom_sf(data = map_states) +
+#, fill = "gray", color = "white", size = 4) +
+  geom_segment(data = d05_map, aes(x = rlat, y = rlon, xend = wlat, yend = wlon, color = Workers.in.Commuting.Flow), size = 0.25, alpha = 0.5, curvature = 0.0) +
+  scale_color_gradient2(limits = c(0, 50000), low = "lightcyan", high = "royalblue4", transform = "log1p") +
+  coord_cartesian(xlim = c(-2150000, 2074000), ylim = c(400000, 3500000)) +
+  labs(title = "Commute Patterns Between Counties Pre-Covid",
+       subtitle = "Can bus/carpool/train routes be better informed by tracking how many people typically commute between counties?",
+       caption = "Data Source: US Census Bureau, ACS 5-year, 2016-2020") +
+  theme(plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.0, padding = margin(10, 10, 10, 30)),
+        plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.0, padding = margin(10, 10, 20, 30)),
+        plot.caption = element_textbox_simple(size = 6, lineheight = 1, halign = 1),
+        legend.position = "none",
+        panel.background = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank())
 
 ```
 
