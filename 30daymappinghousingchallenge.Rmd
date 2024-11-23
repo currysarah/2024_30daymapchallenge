@@ -407,7 +407,9 @@ d05_map <- d05_work %>%
   filter(distmile <= 100 & distmile > 0)
 
 ggplot() + 
-  geom_histogram(data = d05_map, aes(x = Workers.in.Commuting.Flow), fill = "darkolivegreen4", color = "darkolivegreen")
+  geom_histogram(data = d05_map %>% filter(Workers.in.Commuting.Flow <= 10000), aes(x = Workers.in.Commuting.Flow), fill = "darkolivegreen4", color = "darkolivegreen", bins = 60)
+
+quantile(d05_map$Workers.in.Commuting.Flow)
   
 
 ```
