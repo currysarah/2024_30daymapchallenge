@@ -19,7 +19,7 @@ setwd("C:/LocalDocuments/GitHub/2024_30daymapchallenge")
 knitr::opts_chunk$set(echo = TRUE)
 
 #install.packages("devtools")
-devtools::install_github("CityOfPhiladelphia/rphl")
+devtools::install_github("CityOfPhiladelphia/rphl", force = TRUE)
 
 library(censusapi)
 library(dplyr)
@@ -45,7 +45,7 @@ options(tigris_use_cache = TRUE)
 
 options(tigris_use_cache = TRUE)
 
-map_phl_bound <- places(state = "PA", class = "city") %>% 
+map_phl_bound <- places(state = "PA", class = "city", cb = TRUE) %>% 
   filter(NAME == "Philadelphia") %>%
   st_transform("EPSG:2272") %>%
   erase_water()
@@ -124,7 +124,7 @@ ggplot() +
 #data <- url("api.census.gov/data/2023/acs/flows?")
 #fromotherstate = "B07204_011"
 
-map_states <- states() 
+map_states <- states(cb = TRUE) 
 
 #download and clean the headers from this website:
 #https://www.census.gov/data/tables/time-series/demo/geographic-mobility/state-to-state-migration.html
@@ -169,7 +169,7 @@ map_padenj_ctr <- map_padenj_ctr %>%
 
 map_states_ctr <- map_states %>% 
   st_centroid() %>%
-  select(NAME) %>%
+  dplyr::select(NAME) %>%
   rename("MOVEDFROM" = "NAME")
 
 map_states_ctr <- extract(map_states_ctr, geometry, into = c('Lat', 'Lon'), '\\((.*),(.*)\\)', conv = T)
