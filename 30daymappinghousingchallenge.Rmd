@@ -450,11 +450,10 @@ d05_mapa <- ggplot() +
                  filter(flowpercentile == "u100"), aes(x = rlat, y = rlon, xend = wlat, yend = wlon), color = "#2E4080", size = 0.25, alpha = 0.75, curvature = 0.0) +
 #  scale_color_gradient2(limits = c(0, 50000), low = "lightcyan", high = "royalblue4", transform = "log1p") +
   coord_cartesian(xlim = c(-2150000, 2074000), ylim = c(400000, 3500000)) +
-  labs(title = "Commute Patterns Between Counties Pre-Covid",
-       subtitle = "Heaviest Commute Routes",
-       caption = "Data Source: US Census Bureau, ACS 5-year, 2016-2020") +
-  theme(plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.0, padding = margin(10, 30, 5, 30)),
-        plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.0, padding = margin(5, 30, 10, 30)),
+  labs(caption = " ") +
+  theme(
+    # plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.0, padding = margin(10, 30, 5, 30)),
+    #     plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.0, padding = margin(5, 30, 10, 30)),
         plot.caption = element_textbox_simple(size = 6, lineheight = 1, halign = 1),
         legend.position = "bottom",
         panel.background = element_blank(),
@@ -478,11 +477,10 @@ d05_mapb <- ggplot() +
                  filter(distpercentile == "u25"), aes(x = rlat, y = rlon, xend = wlat, yend = wlon), color = "#E5866C", size = 0.25, alpha = 0.75, curvature = 0.0) +
 #  scale_color_gradient2(limits = c(0, 50000), low = "lightcyan", high = "royalblue4", transform = "log1p") +
   coord_cartesian(xlim = c(-2150000, 2074000), ylim = c(400000, 3500000)) +
-  labs(title = "Commute Patterns Between Counties Pre-Covid",
-       subtitle = "Longest Commute Routes",
-       caption = "Data Source: US Census Bureau, ACS 5-year, 2016-2020") +
-  theme(plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.0, padding = margin(10, 30, 5, 30)),
-        plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.0, padding = margin(5, 30, 10, 30)),
+  labs(caption = "Data Source: US Census Bureau, ACS 5-year, 2016-2020") +
+  theme(
+    # plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.0, padding = margin(10, 30, 5, 30)),
+    #     plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.0, padding = margin(5, 30, 10, 30)),
         plot.caption = element_textbox_simple(size = 6, lineheight = 1, halign = 1),
         legend.position = "bottom",
         panel.background = element_blank(),
@@ -495,9 +493,29 @@ d05_mapb <- ggplot() +
         axis.title.x = element_blank(),
         axis.title.y = element_blank())
 
-plot_grid(d05_mapa, d05_mapb, labels = c("Heaviest Commute Routes", "Longest Commute Routes"), rel_widths = c(6, 6))
+d05_map_plotrow <- plot_grid(d05_mapa, d05_mapb, labels = c("Heaviest Commute Routes", "Shortest Commute Routes"), label_color = c("#2E4080", "#E5866C"), rel_widths = c(6, 6))
 
-#ggsave(filename = "thumbnails/05_scurry_journey.png", width = 6, height = 6, dpi = 300)
+d05_map_title <- ggdraw() + 
+  draw_label(
+    "Pre-COVID Commute Routes between Residences and Workplaces",
+    fontface = "bold",
+    x = 0,
+    hjust = 0
+  ) +
+  theme(
+    # add margin on the left of the drawing canvas,
+    # so title is aligned with left edge of first plot
+    plot.margin = margin(0, 0, 0, 7)
+  )
+
+plot_grid(
+  d05_map_title, d05_map_plotrow,
+  ncol = 1,
+  # rel_heights values control vertical title margins
+  rel_heights = c(0.1, 1)
+)
+
+ggsave(filename = "thumbnails/05_scurry_journey.png", width = 12, height = 6, dpi = 300)
 
 ```
 
