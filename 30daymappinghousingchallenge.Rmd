@@ -510,7 +510,7 @@ d05_map_title <- ggdraw() +
 
 plot_grid(
   d05_map_title, d05_map_plotrow,
-  ncol = 1,
+#  ncol = 1,
   # rel_heights values control vertical title margins
   rel_heights = c(0.1, 1)
 )
