@@ -37,6 +37,7 @@ library(tidycensus)
 library(tidygeocoder)
 library(tidyr)
 library(tigris)
+library(viridis)
 
 options(tigris_use_cache = TRUE)
 
@@ -554,23 +555,64 @@ ggsave(filename = "thumbnails/05_scurry_journey.png", width = 12, height = 6, dp
 
 ```
 
-## Day 06 - Raster
+## Day 25 - Heat
 
-```{r day06_data, include=FALSE, message=FALSE, warning=FALSE}
+```{r day25_data, message=FALSE, warning=FALSE}
 
+d25_data <- read.csv(file = "data/d25_source.csv")
 
-
-```
-
-```{r day06_work, message=FALSE, warning=FALSE}
-
-
+map_states <- states(cb = TRUE) %>%
+  st_transform(crs = 5070) 
 
 ```
 
-```{r day06_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
+```{r day25_work, message=FALSE, warning=FALSE}
 
+d25_work <- d25_data %>%
+  filter(yr_pis != 8888 & yr_pis != 9999) %>%
+  drop_na(latitude)
 
+d25_work <- d25_work %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4269) %>%
+  st_transform(crs = 5070)
+
+map_pa <- map_states %>%
+  filter(STUSPS == "PA")
+
+```
+
+```{r day25_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
+
+# Uses grid.arrange to organize independent plots
+
+  
+  # Plot 1: Burglaries overlaid on Chicago boundary
+ggplot() + 
+    geom_sf(data = map_states, fill = "gray85", color = "white") +  # Add Chicago boundary
+    geom_sf(data = d25_work, aes(color = yr_pis), size = 0.1) +  # Overlay burglaries
+    labs(title = "LIHTC Projects, 1990 - 2020") +  # Set plot title
+  xlim(-2150000, 2074000) +
+  ylim(400000.00, 3500000) +
+    theme_void() +
+  theme(legend.position = "bottom") # Use a blank theme
+  
+  # Plot 2: Density of burglaries with contours overlaid on Chicago boundary
+ggplot() + 
+    geom_sf(data = map_states, fill = "gray85", color = "white") +  # Add Chicago boundary with grey fill
+    stat_density2d(data = data.frame(st_coordinates(d25_work)),  # Compute 2D kernel density estimate
+                   aes(X, Y, fill = ..level.., alpha = ..level..),  # Define aesthetics for density contours
+                   size = 0.01, bins = 80, geom = 'polygon') +  # Set size and number of bins for contours
+    scale_fill_viridis() +  # Use Viridis color scale for fill
+    scale_alpha(range = c(0.00, 0.35), guide = FALSE) +  # Set transparency range for contours
+    labs(title = "Density of LIHTC Projects") +  # Set plot title
+  xlim(-2150000, 2074000) +
+  ylim(400000.00, 3500000) +
+    theme_void() + theme(legend.position = "none")  # Use a blank theme and remove legend
+
+# plot_grid(
+#   d25_mapa, d25_mapb,
+#   ncol = 2, nrow = 1
+#   )
 
 ```
 
