@@ -370,9 +370,11 @@ ggsave(filename = "thumbnails/04_scurry_hexagons.png", width = 6, height = 6, dp
 
 d05_data <- read.csv(file = "data/d05_source.csv")
 
-map_states <- states()
+map_states <- states() %>%
+  st_transform(crs = 5070)
 
-map_counties <- counties() 
+map_counties <- counties() %>%
+  st_transform(crs = 5070) 
 
 ```
 
@@ -385,8 +387,7 @@ d05_work <- d05_data %>%
          W.GEOID = (1000 * W.State.FIPS.Code) + W.County.FIPS.Code) 
 
 map_counties_ctr <- map_counties %>%
-  mutate(R.GEOID = as.numeric(GEOID)) %>%
-  st_transform(crs = 5070) %>% 
+  mutate(R.GEOID = as.numeric(GEOID)) %>% 
   st_centroid() %>%
   dplyr::select(R.GEOID) 
 
@@ -448,14 +449,14 @@ d05_mapa <- ggplot() +
                  filter(flowpercentile == "u75"), aes(x = rlat, y = rlon, xend = wlat, yend = wlon), color = "#435DBA", size = 0.25, alpha = 0.75, curvature = 0.0) +
   geom_segment(data = d05_work %>%
                  filter(flowpercentile == "u100"), aes(x = rlat, y = rlon, xend = wlat, yend = wlon), color = "#2E4080", size = 0.25, alpha = 0.75, curvature = 0.0) +
-#  scale_color_gradient2(limits = c(0, 50000), low = "lightcyan", high = "royalblue4", transform = "log1p") +
-  coord_cartesian(xlim = c(-2150000, 2074000), ylim = c(400000, 3500000)) +
-  labs(caption = " ") +
-  theme(
-    # plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.0, padding = margin(10, 30, 5, 30)),
-    #     plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.0, padding = margin(5, 30, 10, 30)),
+#  coord_cartesian(xlim = c(-2150000, 2074000), ylim = c(400000, 3500000)) +
+  labs(title = " ",
+       subtitle = " ", 
+       caption = " ") +
+  theme(plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.0, padding = margin(0, 0, 0, 0)),
+        plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.0, padding = margin(0, 0, 0, 0)),
         plot.caption = element_textbox_simple(size = 6, lineheight = 1, halign = 1),
-        legend.position = "bottom",
+        legend.position = "none",
         panel.background = element_blank(),
         axis.text.x = element_blank(),
         axis.text.y = element_blank(),
@@ -475,14 +476,14 @@ d05_mapb <- ggplot() +
                  filter(distpercentile == "u50"), aes(x = rlat, y = rlon, xend = wlat, yend = wlon), color = "#8F5443", size = 0.25, alpha = 0.75, curvature = 0.0) + 
   geom_segment(data = d05_work %>%
                  filter(distpercentile == "u25"), aes(x = rlat, y = rlon, xend = wlat, yend = wlon), color = "#E5866C", size = 0.25, alpha = 0.75, curvature = 0.0) +
-#  scale_color_gradient2(limits = c(0, 50000), low = "lightcyan", high = "royalblue4", transform = "log1p") +
-  coord_cartesian(xlim = c(-2150000, 2074000), ylim = c(400000, 3500000)) +
-  labs(caption = "Data Source: US Census Bureau, ACS 5-year, 2016-2020") +
-  theme(
-    # plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.0, padding = margin(10, 30, 5, 30)),
-    #     plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.0, padding = margin(5, 30, 10, 30)),
+#  coord_cartesian(xlim = c(-2150000, 2074000), ylim = c(400000, 3500000)) +
+  labs(title = " ",
+       subtitle = " ", 
+       caption = "Data Source: US Census Bureau, ACS 5-year, 2016-2020") +
+  theme(plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.0, padding = margin(0, 0, 0, 0)),
+        plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.0, padding = margin(0, 0, 0, 0)),
         plot.caption = element_textbox_simple(size = 6, lineheight = 1, halign = 1),
-        legend.position = "bottom",
+        legend.position = "none",
         panel.background = element_blank(),
         axis.text.x = element_blank(),
         axis.text.y = element_blank(),
@@ -493,26 +494,59 @@ d05_mapb <- ggplot() +
         axis.title.x = element_blank(),
         axis.title.y = element_blank())
 
-d05_map_plotrow <- plot_grid(d05_mapa, d05_mapb, labels = c("Heaviest Commute Routes", "Shortest Commute Routes"), label_color = c("#2E4080", "#E5866C"), rel_widths = c(6, 6))
+d05_map_plotrow <- plot_grid(
+  d05_mapa, d05_mapb, 
+  nrow = 1, ncol = 2, rel_widths = c(1, 1))
+
+#label_color = c("#2E4080", "#E5866C")
 
 d05_map_title <- ggdraw() + 
   draw_label(
     "Pre-COVID Commute Routes between Residences and Workplaces",
     fontface = "bold",
-    x = 0,
-    hjust = 0
+    size = 16,
+    x = 0.5,
+    hjust = 0.5
   ) +
   theme(
     # add margin on the left of the drawing canvas,
     # so title is aligned with left edge of first plot
-    plot.margin = margin(0, 0, 0, 7)
+    plot.margin = margin(0, 0, 0, 10)
   )
 
+d05_map_subtitlea <- ggdraw() +
+  draw_label(
+    "Heaviest Commute Routes",
+    fontface = "bold",
+    color = "#2E4080",
+    size = 12,
+    x = 0.5,
+    hjust = 0.5
+  )
+
+d05_map_subtitleb <- ggdraw() +
+  draw_label(
+    "Shortest Commute Routes",
+    fontface = "bold",
+    color = "#E5866C",
+    size = 12,
+    x = 0.5,
+    hjust = 0.5
+  )
+
+d05_map_subtitle <- plot_grid(
+  d05_map_subtitlea, d05_map_subtitleb,
+  ncol = 2, nrow = 1, rel_widths = c(6, 6)
+)
+
+d05_map_top <- plot_grid(
+  d05_map_title, d05_map_subtitle,
+  ncol = 1, nrow = 2, rel_heights = c(1, 1)
+)
+
 plot_grid(
-  d05_map_title, d05_map_plotrow,
-#  ncol = 1,
-  # rel_heights values control vertical title margins
-  rel_heights = c(0.1, 1)
+  d05_map_top, d05_map_plotrow,
+  ncol = 1, nrow = 2, rel_heights = c(0.1, 1)
 )
 
 ggsave(filename = "thumbnails/05_scurry_journey.png", width = 12, height = 6, dpi = 300)
