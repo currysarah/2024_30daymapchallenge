@@ -115,7 +115,7 @@ ggplot() +
         axis.ticks.x = element_blank(),
         axis.ticks.y = element_blank())
 
-
+ggsave(filename = "thumbnails/01_scurry_points.png", width = 6, height = 6, dpi = 300)
 ```
 
 ## Day 02 - Lines
@@ -216,6 +216,7 @@ ggplot() +
         axis.ticks = element_blank()) +
   xlim(-2150000, 2074000) +
   ylim(400000.00, 3500000) 
+
 ggsave(filename = "thumbnails/02_scurry_lines.png", width = 6, height = 6, dpi = 300)
 
 ```
