@@ -555,64 +555,220 @@ ggsave(filename = "thumbnails/05_scurry_journey.png", width = 12, height = 6, dp
 
 ```
 
-## Day 25 - Heat
+## Day 12 - TimeAndSpace
 
-```{r day25_data, message=FALSE, warning=FALSE}
+```{r day12_data, message=FALSE, warning=FALSE}
 
-d25_data <- read.csv(file = "data/d25_source.csv")
+d12_data <- read.csv(file = "data/d25_source.csv")
 
 map_states <- states(cb = TRUE) %>%
   st_transform(crs = 5070) 
 
 ```
 
-```{r day25_work, message=FALSE, warning=FALSE}
+```{r day12_work, message=FALSE, warning=FALSE}
 
-d25_work <- d25_data %>%
+d12_work <- d12_data %>%
   filter(yr_pis != 8888 & yr_pis != 9999) %>%
   drop_na(latitude)
 
-d25_work <- d25_work %>%
+d12_work <- d12_work %>%
   st_as_sf(coords = c("longitude", "latitude"), crs = 4269) %>%
   st_transform(crs = 5070)
+
+d12_work <- d12_work %>%
+  mutate(decade = case_when(yr_pis <= 1989 ~ 1980,
+                            yr_pis <= 1999 ~ 1990,
+                            yr_pis <= 2009 ~ 2000,
+                            yr_pis <= 2019 ~ 2010,
+                            yr_pis <= 2029 ~ 2020))
 
 map_pa <- map_states %>%
   filter(STUSPS == "PA")
 
 ```
 
-```{r day25_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
+```{r day12_map, message=FALSE, warning=FALSE, fig.width=12, fig.height=6}
 
 # Uses grid.arrange to organize independent plots
 
   
   # Plot 1: Burglaries overlaid on Chicago boundary
-ggplot() + 
-    geom_sf(data = map_states, fill = "gray85", color = "white") +  # Add Chicago boundary
-    geom_sf(data = d25_work, aes(color = yr_pis), size = 0.1) +  # Overlay burglaries
-    labs(title = "LIHTC Projects, 1990 - 2020") +  # Set plot title
+d12_mapa <- ggplot() + 
+    geom_sf(data = map_states, fill = "gray85", color = "white") +
+    geom_sf(data = d12_work %>%
+              filter(decade == 1980), color = "violet", size = 0.1) + 
+    labs(title = "1980's") +
+  xlim(-2150000, 2074000) +
+  ylim(400000.00, 3500000) +
+  theme_void() +
+  theme(plot.title = element_textbox_simple(size = 14, face = "bold", lineheight = 1, halign = 0.5, padding = margin(0, 0, 0, 0)),
+        plot.margin = margin(0, 0, 0, 0),
+        legend.position = "none")
+
+d12_mapb <- ggplot() + 
+    geom_sf(data = map_states, fill = "gray85", color = "white") +
+    geom_sf(data = d12_work %>%
+              filter(decade == 1990), color = "mediumpurple1", size = 0.1) + 
+    labs(title = "1990's") +
   xlim(-2150000, 2074000) +
   ylim(400000.00, 3500000) +
     theme_void() +
-  theme(legend.position = "bottom") # Use a blank theme
-  
-  # Plot 2: Density of burglaries with contours overlaid on Chicago boundary
-ggplot() + 
-    geom_sf(data = map_states, fill = "gray85", color = "white") +  # Add Chicago boundary with grey fill
-    stat_density2d(data = data.frame(st_coordinates(d25_work)),  # Compute 2D kernel density estimate
-                   aes(X, Y, fill = ..level.., alpha = ..level..),  # Define aesthetics for density contours
-                   size = 0.01, bins = 80, geom = 'polygon') +  # Set size and number of bins for contours
-    scale_fill_viridis() +  # Use Viridis color scale for fill
-    scale_alpha(range = c(0.00, 0.35), guide = FALSE) +  # Set transparency range for contours
-    labs(title = "Density of LIHTC Projects") +  # Set plot title
+  theme(plot.title = element_textbox_simple(size = 14, face = "bold", lineheight = 1, halign = 0.5, padding = margin(0, 0, 0, 0)),
+        plot.margin = margin(0, 0, 0, 0),
+        legend.position = "none")
+
+d12_mapc <- ggplot() + 
+    geom_sf(data = map_states, fill = "gray85", color = "white") +
+    geom_sf(data = d12_work %>%
+              filter(decade == 2000), color = "purple4", size = 0.1) + 
+    labs(title = "2000's") +
   xlim(-2150000, 2074000) +
   ylim(400000.00, 3500000) +
-    theme_void() + theme(legend.position = "none")  # Use a blank theme and remove legend
+    theme_void() +
+  theme(plot.title = element_textbox_simple(size = 14, face = "bold", lineheight = 1, halign = 0.5, padding = margin(0, 0, 0, 0)),
+        plot.margin = margin(0, 0, 0, 0),
+        legend.position = "none")
 
-# plot_grid(
-#   d25_mapa, d25_mapb,
-#   ncol = 2, nrow = 1
-#   )
+d12_mapd <- ggplot() + 
+    geom_sf(data = map_states, fill = "gray85", color = "white") +
+    geom_sf(data = d12_work %>%
+              filter(decade == 2010), color = "slateblue4", size = 0.1) + 
+    labs(title = "2010's") +
+  xlim(-2150000, 2074000) +
+  ylim(400000.00, 3500000) +
+    theme_void() +
+  theme(plot.title = element_textbox_simple(size = 14, face = "bold", lineheight = 1, halign = 0.5, padding = margin(0, 0, 0, 0)),
+        plot.margin = margin(0, 0, 0, 0),
+        legend.position = "none")
+
+d12_mape <- ggplot() + 
+    geom_sf(data = map_states, fill = "gray85", color = "white") +
+    geom_sf(data = d12_work %>%
+              filter(decade == 2020), color = "midnightblue", size = 0.1) + 
+    labs(title = "2020's") +
+  xlim(-2150000, 2074000) +
+  ylim(400000.00, 3500000) +
+    theme_void() +
+  theme(plot.title = element_textbox_simple(size = 14, face = "bold", lineheight = 1, halign = 0.5, padding = margin(0, 0, 0, 0)),
+        plot.margin = margin(0, 0, 0, 0),
+        legend.position = "none")
+
+nbins <- 80
+  # Plot 2: Density of burglaries with contours overlaid on Chicago boundary
+d12_mapf <- ggplot() + 
+    geom_sf(data = map_states, fill = "gray85", color = "white") +
+    stat_density2d(data = data.frame(st_coordinates(d12_work %>%
+              filter(decade == 1980))),  # Compute 2D kernel density estimate
+                   aes(X, Y, fill = ..level.., alpha = ..level..),  # Define aesthetics for density contours
+                   size = 0.01, bins = nbins, geom = 'polygon') +  # Set size and number of bins for contours
+    scale_fill_viridis() +
+    scale_alpha(range = c(0.00, 0.35), guide = FALSE) +  # Set transparency range for contours
+  xlim(-2150000, 2074000) +
+  ylim(400000.00, 3500000) +
+    theme_void() + 
+  theme(plot.margin = margin(0, 0, 0, 0),
+        legend.position = "none")  
+
+d12_mapg <- ggplot() + 
+    geom_sf(data = map_states, fill = "gray85", color = "white") +
+    stat_density2d(data = data.frame(st_coordinates(d12_work %>%
+              filter(decade == 1990))),  # Compute 2D kernel density estimate
+                   aes(X, Y, fill = ..level.., alpha = ..level..),  # Define aesthetics for density contours
+                   size = 0.01, bins = nbins, geom = 'polygon') +  # Set size and number of bins for contours
+    scale_fill_viridis() +
+    scale_alpha(range = c(0.00, 0.35), guide = FALSE) +  # Set transparency range for contours
+  xlim(-2150000, 2074000) +
+  ylim(400000.00, 3500000) +
+    theme_void() + 
+  theme(plot.margin = margin(0, 0, 0, 0),
+        legend.position = "none") 
+
+d12_maph <- ggplot() + 
+    geom_sf(data = map_states, fill = "gray85", color = "white") +
+    stat_density2d(data = data.frame(st_coordinates(d12_work %>%
+              filter(decade == 2000))),  # Compute 2D kernel density estimate
+                   aes(X, Y, fill = ..level.., alpha = ..level..),  # Define aesthetics for density contours
+                   size = 0.01, bins = nbins, geom = 'polygon') +  # Set size and number of bins for contours
+    scale_fill_viridis() +
+    scale_alpha(range = c(0.00, 0.35), guide = FALSE) +  # Set transparency range for contours
+  xlim(-2150000, 2074000) +
+  ylim(400000.00, 3500000) +
+    theme_void() + 
+  theme(plot.margin = margin(0, 0, 0, 0),
+        legend.position = "none") 
+
+d12_mapi <- ggplot() + 
+    geom_sf(data = map_states, fill = "gray85", color = "white") +
+    stat_density2d(data = data.frame(st_coordinates(d12_work %>%
+              filter(decade == 2010))),  # Compute 2D kernel density estimate
+                   aes(X, Y, fill = ..level.., alpha = ..level..),  # Define aesthetics for density contours
+                   size = 0.01, bins = nbins, geom = 'polygon') +  # Set size and number of bins for contours
+    scale_fill_viridis() +
+    scale_alpha(range = c(0.00, 0.35), guide = FALSE) +  # Set transparency range for contours
+  xlim(-2150000, 2074000) +
+  ylim(400000.00, 3500000) +
+    theme_void() + 
+  theme(plot.margin = margin(0, 0, 0, 0),
+        legend.position = "none") 
+
+d12_mapj <- ggplot() + 
+    geom_sf(data = map_states, fill = "gray85", color = "white") +
+    stat_density2d(data = data.frame(st_coordinates(d12_work %>%
+              filter(decade == 2020))),  # Compute 2D kernel density estimate
+                   aes(X, Y, fill = ..level.., alpha = ..level..),  # Define aesthetics for density contours
+                   size = 0.01, bins = nbins, geom = 'polygon') +  # Set size and number of bins for contours
+    scale_fill_viridis() +
+    scale_alpha(range = c(0.00, 0.35), guide = FALSE) +  # Set transparency range for contours
+  xlim(-2150000, 2074000) +
+  ylim(400000.00, 3500000) +
+    theme_void() + 
+  theme(plot.margin = margin(0, 0, 0, 0),
+        legend.position = "none") 
+
+d12_map_title <- ggdraw() +
+  draw_label(
+    "Density of LIHTC Projects by Year Placed in Service",
+    fontface = "bold",
+    color = "black",
+    size = 18,
+    x = 0.5,
+    hjust = 0.5
+  )
+
+d12_map_point <- plot_grid(
+  d12_mapa, d12_mapb, d12_mapc, d12_mapd, d12_mape,
+  align = "h",
+  rel_heights = 1,
+  ncol = 5, nrow = 1
+  )
+
+d12_map_density <- plot_grid(
+  d12_mapf, d12_mapg, d12_maph, d12_mapi, d12_mapj,
+  align = "h",
+  rel_heights = 1,
+  ncol = 5, nrow = 1
+  )
+
+d12_map_caption <- ggdraw() +
+  draw_label(
+    "Data Source: U.S. Department of Housing and Urban Development, LIHTC Property Level Data",
+    fontface = "plain",
+    color = "black",
+    size = 8,
+    x = 1,
+    hjust = 1
+  ) +
+  theme(plot.margin = margin(0, 10, 0, 0))
+
+plot_grid(
+  d12_map_title, d12_map_point, d12_map_density, d12_map_caption,
+  align = "v",
+#  rel_heights = c(3, 1, 1, 6),
+  ncol = 1, nrow = 4
+)
+
+ggsave(filename = "thumbnails/12_scurry_timeandspace.png", width = 12, height = 6, dpi = 300)
 
 ```
 
