@@ -21,6 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("devtools")
 devtools::install_github("CityOfPhiladelphia/rphl", force = TRUE)
 
+library(biscale)
 library(censusapi)
 library(cowplot)
 library(dplyr)
@@ -52,6 +53,9 @@ map_phl_bound <- places(state = "PA", class = "city", cb = TRUE) %>%
   st_transform("EPSG:2272") %>%
   erase_water()
 
+map_states <- states(cb = TRUE) %>%
+  st_transform(crs = 5070) 
+
 ```
 
 
@@ -64,7 +68,12 @@ Wow, let's give it a go.
 ```{r day01_data, include=FALSE, message=FALSE, warning=FALSE}
 
 query <- paste("SELECT *", "FROM permits")
+
+#this next line only works some of the time - run until it does
 d01_data <- rphl::get_carto(query = query, format = "csv", base_url = "https://phl.carto.com/api/v2/sql", stringsAsFactors = FALSE)
+
+#export and read in a copy to not have to wait every time
+write.csv(d01_Data, "C:/LocalDocuments/GitHub/2024_30daymapchallenge/export/d01_data_save.csv")
 
 ```
 
@@ -126,8 +135,6 @@ ggsave(filename = "thumbnails/01_scurry_points.png", width = 6, height = 6, dpi 
 #data <- url("api.census.gov/data/2023/acs/flows?")
 #fromotherstate = "B07204_011"
 
-map_states <- states(cb = TRUE) 
-
 #download and clean the headers from this website:
 #https://www.census.gov/data/tables/time-series/demo/geographic-mobility/state-to-state-migration.html
 
@@ -151,9 +158,6 @@ d02_work <- d02_data %>%
   mutate(MOVEDTO = "District") %>%
   filter(MOVEDFROM != "Pennsylvania" & MOVEDFROM != "Delaware" & MOVEDFROM != "New Jersey") %>%
   st_drop_geometry()
-
-map_states <- map_states %>%
-  st_transform(crs = 5070)
 
 map_padenj <- map_states %>%
   filter(STUSPS == "PA" | STUSPS == "DE" | STUSPS == "NJ") %>%
@@ -372,9 +376,6 @@ ggsave(filename = "thumbnails/04_scurry_hexagons.png", width = 6, height = 6, dp
 
 d05_data <- read.csv(file = "data/d05_source.csv")
 
-map_states <- states() %>%
-  st_transform(crs = 5070)
-
 map_counties <- counties() %>%
   st_transform(crs = 5070) 
 
@@ -385,7 +386,7 @@ map_counties <- counties() %>%
 d05_work <- d05_data %>%
   filter(Workers.in.Commuting.Flow > MOE) %>%
   drop_na(W.County.FIPS.Code) %>%
-  mutate(R.GEOID = (1000 * R.State.FIPS.Code) + R.County.FIPS.Code,
+  mutate(R.GEOID = (1000 * X...R.State.FIPS.Code) + R.County.FIPS.Code,
          W.GEOID = (1000 * W.State.FIPS.Code) + W.County.FIPS.Code) 
 
 map_counties_ctr <- map_counties %>%
@@ -560,9 +561,6 @@ ggsave(filename = "thumbnails/05_scurry_journey.png", width = 12, height = 6, dp
 ```{r day12_data, message=FALSE, warning=FALSE}
 
 d12_data <- read.csv(file = "data/d25_source.csv")
-
-map_states <- states(cb = TRUE) %>%
-  st_transform(crs = 5070) 
 
 ```
 
@@ -769,6 +767,184 @@ plot_grid(
 )
 
 ggsave(filename = "thumbnails/12_scurry_timeandspace.png", width = 12, height = 6, dpi = 300)
+
+```
+
+## Day 13 - A New Tool
+```{r d13_data, message=FALSE, warning=FALSE}
+#Source: https://www.realtor.com/research/data/
+
+d13_data <- read.csv(file = "data/d13_source.csv")
+
+map_zip <- zctas() %>%
+  st_transform(crs = 5070) %>%
+  mutate(postal_code = as.numeric(ZCTA5CE20))
+
+map_zip_ctr <- map_zip %>%
+  st_centroid()
+
+map_zip_padenj <- st_intersection(map_zip_ctr, map_states)
+
+map_zip_padenj <- map_zip_padenj %>%
+  filter(STUSPS == "PA" | STUSPS == "DE" | STUSPS == "NJ") %>%
+  mutate(postal_code = as.numeric(ZCTA5CE20)) %>%
+  dplyr::select(GEOID, STUSPS, postal_code) %>%
+  st_drop_geometry()
+
+map_zip_padenj <- inner_join(map_zip, map_zip_padenj, by = "postal_code")
+
+d13_data_work <- inner_join(map_zip_padenj, d13_data, by = "postal_code") %>%
+  st_transform(crs = 2272)
+
+```
+
+```{r d13_work, message=FALSE, warning=FALSE}
+
+d13_data_202202 <- d13_data_work %>%
+  filter(month_date_yyyymm == 202202) %>%
+  dplyr::select(postal_code, GEOID, STUSPS, month_date_yyyymm, zip_name, 
+         median_listing_price, active_listing_count, median_days_on_market, 
+         new_listing_count, price_increased_count, price_reduced_count, 
+         median_listing_price_per_square_foot, median_square_feet,
+         average_listing_price, total_listing_count)
+
+d13_data_202410 <- d13_data_work %>%
+  filter(month_date_yyyymm == 202410) %>%
+  dplyr::select(postal_code, GEOID, STUSPS, month_date_yyyymm, zip_name, 
+         median_listing_price, active_listing_count, median_days_on_market, 
+         new_listing_count, price_increased_count, price_reduced_count, 
+         median_listing_price_per_square_foot, median_square_feet,
+         average_listing_price, total_listing_count)
+
+d13_data_22 <- d13_data_202202 %>%
+  dplyr::select(postal_code, GEOID, STUSPS, "22median_listing_price" = median_listing_price,
+                "22active_listing_count" = active_listing_count,
+                "22total_listing_count" = total_listing_count)
+
+d13_data_24 <- d13_data_202410 %>%
+  dplyr::select(postal_code, "24median_listing_price" = median_listing_price,
+                "24active_listing_count" = active_listing_count,
+                "24total_listing_count" = total_listing_count) %>%
+  st_drop_geometry()
+
+d13_data_map <- left_join(d13_data_22, d13_data_24, by = "postal_code")
+
+d13_data_map <- d13_data_map %>%
+  mutate(diff_median_listing_price = `24median_listing_price` - `22median_listing_price`,
+         diff_active_listing_count = `24active_listing_count` - `22active_listing_count`,
+         diff_total_listing_count = `24total_listing_count` - `22total_listing_count`) %>%
+  mutate(factor_mlp = case_when(diff_median_listing_price <= 0 ~ as.factor("negative"),
+                                diff_median_listing_price > 0 ~ as.factor("positive")),
+         factor_alc = case_when(diff_active_listing_count <= 0 ~ as.factor("negative"),
+                                diff_active_listing_count > 0 ~ as.factor("positive")),
+         factor_tlc = case_when(diff_total_listing_count <= 0 ~ as.factor("negative"),
+                                diff_total_listing_count > 0 ~ as.factor("positive")))
+
+d13_data_map <- bi_class(d13_data_map, x = factor_alc, y = factor_mlp, dim = 2)
+
+table(d13_data_map$bi_class)
+#!883
+
+```
+
+```{r d13_map, message=FALSE, warning=FALSE}
+
+d13_map <- ggplot() + 
+    geom_sf(data = d13_data_map, aes(fill = bi_class), color = "transparent", size = 0.1, show.legend = FALSE) +
+  bi_scale_fill(pal = "DkCyan2", dim = 2) +
+  labs(
+    title = "Did a Housing Inventory Increase Lead to a\n Decrease in Median Listing Price",
+    subtitle = "per Tri-State ZIP Code between February 2022 and October 2024?",
+    caption = "Data Source: Realtors.com"
+  ) +
+  theme(plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.5, padding = margin(10, 0, 5, 0)),
+        plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.5, padding = margin(5, 0, 20, 0)),
+        plot.caption = element_textbox_simple(size = 6, lineheight = 1, halign = 1),
+        legend.position = "none",
+        panel.background = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
+d13_legend <- bi_legend(pal = "DkCyan2",
+                    dim = 2,
+                    xlab = "-/+ Inventory",
+                    ylab = "-/+ Price",
+                    size = 8)
+
+d13_plot <- ggdraw() +
+  draw_plot(d13_map, 0, 0, 1, 1) +
+  draw_plot(d13_legend, 0.02, .35, 0.2, 0.2)
+
+d13_plot
+
+ggsave(filename = "thumbnails/13_scurry_anewtool.png", width = 12, height = 6, dpi = 300)
+
+```
+
+Many experts say that housing prices will decrease once inventory increases. According to Realtor.com, the amount of housing inventory for sale in the United States since 2016 was most scarce during February of 2022. Per ZIP code in the tri-state region, which areas have seen housing inventory increases and median listing price decreases? 
+
+During the study period and within the study area, inventory counts and median prices behaved as predicted - either median price increased when inventory decreased or median price decreased when inventory increased - in 35% of recorded cases. More frequently, in areas across the tri-state area where inventory increased, the median price also increased, which occurred in about 58% of recorded cases.
+
+## Day 22 - 2 Colors
+```{r d22_data, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r d22_work, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r d22_map, message=FALSE, warning=FALSE}
+
+
+
+```
+
+## Day 25 - Heat
+```{r d25_data, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r d25_work, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r d25_map, message=FALSE, warning=FALSE}
+
+
+
+```
+
+## Day 30 - The Final Map
+```{r d30_data, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r d30_work, message=FALSE, warning=FALSE}
+
+
+
+```
+
+```{r d30_map, message=FALSE, warning=FALSE}
+
+
 
 ```
 
