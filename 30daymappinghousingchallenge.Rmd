@@ -56,6 +56,9 @@ map_phl_bound <- places(state = "PA", class = "city", cb = TRUE) %>%
 map_states <- states(cb = TRUE) %>%
   st_transform(crs = 5070) 
 
+
+phlcouncildistricts <- st_read(dsn = "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Council_Districts_2000/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson")
+
 ```
 
 
@@ -73,7 +76,7 @@ query <- paste("SELECT *", "FROM permits")
 d01_data <- rphl::get_carto(query = query, format = "csv", base_url = "https://phl.carto.com/api/v2/sql", stringsAsFactors = FALSE)
 
 #export and read in a copy to not have to wait every time
-write.csv(d01_Data, "C:/LocalDocuments/GitHub/2024_30daymapchallenge/export/d01_data_save.csv")
+write.csv(d01_data, "C:/LocalDocuments/GitHub/2024_30daymapchallenge/export/d01_data_save.csv")
 
 ```
 
@@ -560,7 +563,7 @@ ggsave(filename = "thumbnails/05_scurry_journey.png", width = 12, height = 6, dp
 
 ```{r day12_data, message=FALSE, warning=FALSE}
 
-d12_data <- read.csv(file = "data/d25_source.csv")
+d12_data <- read.csv(file = "data/d12_source.csv")
 
 ```
 
@@ -894,7 +897,7 @@ During the study period and within the study area, inventory counts and median p
 ## Day 22 - 2 Colors
 ```{r d22_data, message=FALSE, warning=FALSE}
 
-
+d22_data <- st_read(dsn = "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/AffordableHousingProduction/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson")
 
 ```
 
@@ -906,26 +909,84 @@ During the study period and within the study area, inventory counts and median p
 
 ```{r d22_map, message=FALSE, warning=FALSE}
 
+new_color <- "#55AFF4"
+old_color <- "#142D45"
+day22_subtitle <- "and their age from <span style='color: #142D45;'>**old**</span> to <span style='color: #55AFF4;'>**new**</span> in Philadelphia" 
 
+
+ggplot() + 
+  geom_sf(data = map_phl_bound, fill = "gray80", color = "white") +
+  geom_sf(data = d22_data %>% filter(status == "Complete"), aes(color = fiscal_year_complete, size = total_units), alpha = 0.25) + 
+  labs(title = "Affordable Housing by Total Units",
+       subtitle = day22_subtitle,
+       caption = "Data Source: OpenDataPhilly") +
+  theme(plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.5, padding = margin(10, 0, 5, 0)),
+        plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.5, padding = margin(5, 20, 20, 20)),
+        plot.caption = element_textbox_simple(size = 6, lineheight = 1, halign = 1),
+        legend.position = "none",
+        panel.background = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
+ggsave(filename = "thumbnails/22_scurry_twocolors.png", width = 6, height = 6, dpi = 300)
 
 ```
 
 ## Day 25 - Heat
 ```{r d25_data, message=FALSE, warning=FALSE}
+#Source: https://opendataphilly.org/datasets/heat-vulnerability-by-census-tract/
 
+d25_data_heat <- st_read(dsn = "data/d25_source.geojson") 
 
+st_crs(d25_data_heat)
+
+d25_data_crime <- read.csv(file = "data/d25_source_crime.csv")
 
 ```
 
 ```{r d25_work, message=FALSE, warning=FALSE}
 
+table(d25_data_crime$text_general_code)
 
+d25_data_crime_work <- d25_data_crime %>%
+  filter(text_general_code == "Aggravated Assault Firearm" | text_general_code == "Robbery Firearm") %>%
+  na.omit("lat") %>%
+  st_as_sf(coords = c("lng", "lat"), crs = 4326) %>%
+  st_transform(crs = st_crs(d25_data_heat))
 
 ```
 
-```{r d25_map, message=FALSE, warning=FALSE}
+```{r d25_map, message=FALSE, warning=FALSE, fig.width=6, fig.height=6}
 
+ggplot() + 
+  geom_sf(data = d25_data_heat, aes(fill = hvi_score), color = "transparent") + 
+  scale_fill_steps2(low = "#2C4D00", mid = "#F5F8EF", high = "#AA4639", midpoint = 0, na.value = "white", breaks = seq(-8, 8, 1)) +
+  geom_sf(data = d25_data_crime_work, aes(geometry = d25_data_crime_work$geometry), color = "darkred", size = 0.5, alpha = 0.5) +
+  geom_sf(data = phlcouncildistricts, fill = "transparent", color = "gray90", size = 12) +
+  labs(title = "Packing Heat per Council District",
+       subtitle = "Heat Vulnerability Index and Firearm Incidents in 2024",
+       caption = "Data Source: OpenDataPhilly") +
+  theme(plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.5, padding = margin(10, 30, 5, 30)),
+        plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.5, padding = margin(5, 20, 20, 20)),
+        plot.caption = element_textbox_simple(size = 6, lineheight = 1, halign = 1),
+        legend.position = "none",
+        panel.background = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank())
 
+ggsave(filename = "thumbnails/25_scurry_heat.png", width = 6, height = 6, dpi = 300)
 
 ```
 
