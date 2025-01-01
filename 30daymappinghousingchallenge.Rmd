@@ -71,7 +71,7 @@ Wow, let's give it a go.
 
 ## Day 01 - Points
 
-```{r day01_data, include=FALSE, message=FALSE, warning=FALSE}
+```{r day01_data, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 
 query <- paste("SELECT *", "FROM permits")
 
@@ -84,6 +84,8 @@ write.csv(d01_data, "C:/LocalDocuments/GitHub/2024_30daymapchallenge/export/d01_
 ```
 
 ```{r day01_work, message=FALSE, warning=FALSE}
+
+d01_data <- read.csv(file = "export/d01_data_save.csv")
 
 d01_work <- d01_data %>%
   filter(commercialorresidential == "RESIDENTIAL") %>%
@@ -397,7 +399,7 @@ combined factor.
 
 ## Day 05 - Journey
 
-```{r day05_data, include=FALSE, message=FALSE, warning=FALSE}
+```{r day05_data, message=FALSE, warning=FALSE}
 
 #https://www.census.gov/data/tables/2020/demo/metro-micro/commuting-flows-2020.html
 #remove headers, footers, and convert Workers in Commuting Flow to Numeric column
@@ -414,7 +416,7 @@ map_counties <- counties() %>%
 d05_work <- d05_data %>%
   filter(Workers.in.Commuting.Flow > MOE) %>%
   drop_na(W.County.FIPS.Code) %>%
-  mutate(R.GEOID = (1000 * X...R.State.FIPS.Code) + R.County.FIPS.Code,
+  mutate(R.GEOID = (1000 * R.State.FIPS.Code) + R.County.FIPS.Code,
          W.GEOID = (1000 * W.State.FIPS.Code) + W.County.FIPS.Code) 
 
 map_counties_ctr <- map_counties %>%
@@ -817,7 +819,8 @@ though there has been an increase in recent years.
 ```{r d13_data, message=FALSE, warning=FALSE}
 #Source: https://www.realtor.com/research/data/
 
-d13_data <- st_read(dsn = "https://econdata.s3-us-west-2.amazonaws.com/Reports/Core/RDC_Inventory_Core_Metrics_Zip_History.csv")
+d13_data <- st_read(dsn = "https://econdata.s3-us-west-2.amazonaws.com/Reports/Core/RDC_Inventory_Core_Metrics_Zip_History.csv") %>%
+  mutate(postal_code = as.numeric(postal_code))
 
 map_zip <- zctas() %>%
   st_transform(crs = 5070) %>%
@@ -862,12 +865,18 @@ d13_data_202410 <- d13_data_work %>%
 d13_data_22 <- d13_data_202202 %>%
   dplyr::select(postal_code, GEOID, STUSPS, "22median_listing_price" = median_listing_price,
                 "22active_listing_count" = active_listing_count,
-                "22total_listing_count" = total_listing_count)
+                "22total_listing_count" = total_listing_count) %>%
+  mutate(`22median_listing_price` = as.numeric(`22median_listing_price`),
+         `22active_listing_count` = as.numeric(`22active_listing_count`),
+         `22total_listing_count` = as.numeric(`22total_listing_count`))
 
 d13_data_24 <- d13_data_202410 %>%
   dplyr::select(postal_code, "24median_listing_price" = median_listing_price,
                 "24active_listing_count" = active_listing_count,
                 "24total_listing_count" = total_listing_count) %>%
+  mutate(`24median_listing_price` = as.numeric(`24median_listing_price`),
+         `24active_listing_count` = as.numeric(`24active_listing_count`),
+         `24total_listing_count` = as.numeric(`24total_listing_count`)) %>%
   st_drop_geometry()
 
 d13_data_map <- left_join(d13_data_22, d13_data_24, by = "postal_code")
