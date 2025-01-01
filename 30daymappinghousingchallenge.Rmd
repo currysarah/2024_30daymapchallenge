@@ -56,8 +56,11 @@ map_phl_bound <- places(state = "PA", class = "city", cb = TRUE) %>%
 map_states <- states(cb = TRUE) %>%
   st_transform(crs = 5070) 
 
-
 phlcouncildistricts <- st_read(dsn = "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Council_Districts_2000/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson")
+
+acs_variable_list.2023 <- load_variables(2023, #year
+                                         "acs5", #five year ACS estimates
+                                         cache = TRUE)
 
 ```
 
@@ -130,6 +133,13 @@ ggplot() +
 
 ggsave(filename = "thumbnails/01_scurry_points.png", width = 6, height = 6, dpi = 300)
 ```
+
+At the time this data was called, there were more new construction permits pulled than
+demolition permits for residential projects, according to the office of Licenses and Inspections. 
+This is worth keeping an eye on for the purposes of achieving the Mayors' goal of 
+creating more housing to help bring down the cost of housing and ultimately widen the 
+tax base.
+
 
 ## Day 02 - Lines
 
@@ -229,13 +239,13 @@ ggsave(filename = "thumbnails/02_scurry_lines.png", width = 6, height = 6, dpi =
 
 ```
 
+See a lot of new faces in town lately? Who is moving to the tri-state area and from where are 
+they coming? The largest number of newcomers are from New York, but Maryland, California,
+and Florida were also top contributors in 2022.
+
 ## Day 03 - Polygons
 
 ```{r day03_data, include=FALSE, message=FALSE, warning=FALSE}
-
-acs_variable_list.2022 <- load_variables(2022, #year
-                                         "acs5", #five year ACS estimates
-                                         cache = TRUE)
 
 d03_data <- get_acs(geography = "county",
                     state = c("PA", "DE", "NJ"),
@@ -294,6 +304,12 @@ ggplot() +
 ggsave(filename = "thumbnails/03_scurry_polygons.png", width = 6, height = 6, dpi = 300)
 
 ```
+
+There are many ways to measure the difference between household income and cost 
+of living expenses. One method includes comparing actual income to a calculated 
+salary required to not be cost-burdened by mortgage or rental payments. In McKean County, 
+PA, folks have a low cost of living compared to their median income - while the 
+cost of living in Essex County, NJ is actually higher than the median income.
 
 ## Day 04 - Hexagons
 
@@ -369,6 +385,15 @@ ggsave(filename = "thumbnails/04_scurry_hexagons.png", width = 6, height = 6, dp
 #   geom_hex() 
 
 ```
+
+Lead pipes have very detrimental effects on the health and wellbeing of residents in 
+old cities like Philadelphia. Studies have repeatedly shown that people of color 
+and those who live in homes built prior to anti-lead pipe laws in the 1970's are 
+especially at risk for the demonstrated ill effects. This map examines every 
+Census Tract in Philadelphia County to determine if the area was 
+majority non-White AND if the median construction year of homes there was older than 1970. 
+The hex map reveals a density of tracts in West and South Philly that mark TRUE for that 
+combined factor. 
 
 ## Day 05 - Journey
 
@@ -558,6 +583,15 @@ plot_grid(
 ggsave(filename = "thumbnails/05_scurry_journey.png", width = 12, height = 6, dpi = 300)
 
 ```
+
+Mapping commute routes between residences and workplaces can help inform where 
+public transit would be most efficient and see the most use. It's not enough to 
+simply look at the heaviest commute routes, but it is also worthwhile to compare 
+which routes are longest in order to, again, identify which routes would transport 
+the most people over the longest distances. While hubs like Atlanta and DC experience 
+heavy amounts of commuters who are coming from short distances, it's interesting 
+to see that places like Detroit and Chicago have very heavy amounts of commuters, 
+but not from those traveling a short distance.
 
 ## Day 12 - TimeAndSpace
 
@@ -773,6 +807,12 @@ ggsave(filename = "thumbnails/12_scurry_timeandspace.png", width = 12, height = 
 
 ```
 
+Mapping where LIHTC projects have been implemented per decade reveals a serious density 
+of affordable projects on the Eastern half of the United States and a fairly constant 
+presence of projects along the West coast. From decade to decade, the Southern region's 
+introduction of LIHTC construction isn't as strong between the 1990's and the 2010's, 
+though there has been an increase in recent years.
+
 ## Day 13 - A New Tool
 ```{r d13_data, message=FALSE, warning=FALSE}
 #Source: https://www.realtor.com/research/data/
@@ -913,7 +953,6 @@ new_color <- "#55AFF4"
 old_color <- "#142D45"
 day22_subtitle <- "and their age from <span style='color: #142D45;'>**old**</span> to <span style='color: #55AFF4;'>**new**</span> in Philadelphia" 
 
-
 ggplot() + 
   geom_sf(data = map_phl_bound, fill = "gray80", color = "white") +
   geom_sf(data = d22_data %>% filter(status == "Complete"), aes(color = fiscal_year_complete, size = total_units), alpha = 0.25) + 
@@ -937,6 +976,12 @@ ggplot() +
 ggsave(filename = "thumbnails/22_scurry_twocolors.png", width = 6, height = 6, dpi = 300)
 
 ```
+
+This map depicts the locations of PHA-owned affordable housing facilities throughout 
+Philadelphia sorted by age. The newer buildings appear to be located most densely 
+in Center City and West Philly, while the older projects are mostly distributed 
+in South Philly and also in West Philly. The dearth of affordable housing is 
+visible in the northeast region. 
 
 ## Day 25 - Heat
 ```{r d25_data, message=FALSE, warning=FALSE}
@@ -990,10 +1035,25 @@ ggsave(filename = "thumbnails/25_scurry_heat.png", width = 6, height = 6, dpi = 
 
 ```
 
+Several studies show that hotspots for crime are colocated in places where there 
+is little tree cover. Synonymously (and in keeping with the day's theme), 
+it could also be theorized that crimes that occur with firearms might be colocated 
+where heat vulnerability is high. This map aims to begin to test that hypothesis, acknowledging 
+that correlation does not equal causation.
+
 ## Day 30 - The Final Map
 ```{r d30_data, message=FALSE, warning=FALSE}
 
+d30_data_vacant <- st_read(dsn = "https://services.arcgis.com/fLeGjb7u4uXqeF9q/arcgis/rest/services/Vacant_Indicators_Land/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson")
 
+d30_data_medhomeval <- get_acs(geography = "tract",
+                    state = "PA",
+                    county = "Philadelphia",
+                    variables = c(medhomevalue = "B25077_001"), 
+                    year = 2023,
+                    geometry = TRUE,
+                    output = "wide"
+)
 
 ```
 
@@ -1005,9 +1065,38 @@ ggsave(filename = "thumbnails/25_scurry_heat.png", width = 6, height = 6, dpi = 
 
 ```{r d30_map, message=FALSE, warning=FALSE}
 
+d30_title <- "<span style='color: #FF0000;'>**Vacant Buildings**</span>" 
 
+ggplot() + 
+  geom_sf(data = map_phl_bound, fill = "gray80", color = "white") +
+  geom_sf(data = d30_data_medhomeval, aes(fill = medhomevalueE), color = "transparent", alpha = 1) + 
+  scale_fill_steps2(low = "#8F9000", high = "#2C4D00", midpoint = 0, na.value = "white", breaks = seq(0, 1000000)) +
+  geom_sf(data = d30_data_vacant, fill = "red", color = "transparent", alpha = 0.5) +
+  labs(title = d30_title,
+       subtitle = "and 2022 Median Home Value",
+       caption = "Data Source: OpenDataPhilly, US Census Bureau, ACS 5-year, 2023") +
+  theme(plot.title = element_textbox_simple(size = 14, lineheight = 1, halign = 0.5, padding = margin(10, 0, 5, 0)),
+        plot.subtitle = element_textbox_simple(size = 9, lineheight = 1, halign = 0.5, padding = margin(5, 20, 20, 20)),
+        plot.caption = element_textbox_simple(size = 6, lineheight = 1, halign = 1),
+        legend.position = "none",
+        panel.background = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank())
+
+ggsave(filename = "thumbnails/30_scurry_thefinalmap.png", width = 6, height = 6, dpi = 300)
 
 ```
+
+Residential developers looking for profitable projects might prioritize purchasing property 
+in places where there are high "comps" or neighboring homes going for high prices. 
+Mapping vacant buildings, as categorized by the City, against 2022 median home value 
+shows that Census tracts with high home values have a low density and number of vacant buildings.
 
 # Appendix
 
