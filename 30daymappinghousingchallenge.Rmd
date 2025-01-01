@@ -817,7 +817,7 @@ though there has been an increase in recent years.
 ```{r d13_data, message=FALSE, warning=FALSE}
 #Source: https://www.realtor.com/research/data/
 
-d13_data <- read.csv(file = "data/d13_source.csv")
+d13_data <- st_read(dsn = "https://econdata.s3-us-west-2.amazonaws.com/Reports/Core/RDC_Inventory_Core_Metrics_Zip_History.csv")
 
 map_zip <- zctas() %>%
   st_transform(crs = 5070) %>%
